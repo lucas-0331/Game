@@ -15,38 +15,29 @@ class Game:
         self.map = self.maps.get_map(self.current_level)
         self.texture_manager = TextureManager()
         
-        # Otimizações principais
         self.setup_optimizations()
         
     def setup_optimizations(self):
         """Configurar todas as otimizações de performance"""
-        # Ajustar número de raios para melhor balance performance/qualidade
         config.NUM_RAYS = config.WIN_WIDTH // config.COLUMN_WIDTH
         
-        # Pre-calcular ângulos dos raios
         self.ray_angles = np.array([
             math.radians(i * config.FOV / config.NUM_RAYS - config.FOV/2) 
             for i in range(config.NUM_RAYS)
         ])
         self.distance_correction = np.cos(self.ray_angles)
         
-        # Buffer para distâncias (z-buffer)
         self.wall_buffer = np.full(config.NUM_RAYS, float('inf'))
         
-        # Configurar surface para double buffering
         self.screen_buffer = pygame.Surface((config.WIN_WIDTH, config.WIN_HEIGHT))
         
-        # NOVA OTIMIZAÇÃO: Cache de colunas de textura pré-renderizadas
         self.texture_column_cache = {}
-        self.max_column_cache = 200  # Limite do cache
+        self.max_column_cache = 200
         
-        # NOVA OTIMIZAÇÃO: Surface temporária para operações de textura
         self.temp_surface = pygame.Surface((config.COLUMN_WIDTH, config.WIN_HEIGHT))
         
-        # NOVA OTIMIZAÇÃO: Arrays NumPy para operações vetorizadas
-        self.shade_lut = np.linspace(0, 1, 256)  # Lookup table para shading
+        self.shade_lut = np.linspace(0, 1, 256)
         
-        # Debug: mostrar posição do jogador
         self.debug_font = pygame.font.Font(None, 24)
         
     def run(self):
@@ -56,7 +47,6 @@ class Game:
             self.update()
             self.draw()
             
-            # Mostrar FPS e posição para debug
             fps_text = f"FPS: {int(config.CLOCK.get_fps())} | Pos: ({self.player.x:.2f}, {self.player.y:.2f}) | Rot: {math.degrees(self.player.rot):.1f}°"
             pygame.display.set_caption(fps_text)
             pygame.display.flip()
@@ -72,68 +62,50 @@ class Game:
         self.player.update()
 
     def draw(self):
-        # Limpar buffer
         self.screen_buffer.fill((0, 0, 0))
         
-        # Desenhar fundo simples
         self.draw_simple_background()
         
-        # Raycasting com texturização otimizada
         self.optimized_textured_raycasting()
         
-        # Debug info
         self.draw_debug_info()
         
-        # Blit buffer para tela principal
         config.DISPLAY.blit(self.screen_buffer, (0, 0))
 
     def draw_simple_background(self):
         """Fundo simples sem gradiente custoso"""
-        # Céu
         pygame.draw.rect(self.screen_buffer, config.CEILING_COLOR, 
                         (0, 0, config.WIN_WIDTH, config.WIN_HEIGHT // 2))
-        # Chão
         pygame.draw.rect(self.screen_buffer, config.FLOOR_COLOR,
                         (0, config.WIN_HEIGHT // 2, config.WIN_WIDTH, config.WIN_HEIGHT // 2))
 
     def optimized_textured_raycasting(self):
         """Raycasting com texturização otimizada para performance"""
-        # Resetar buffer
         self.wall_buffer.fill(float('inf'))
         
-        # Posição e rotação do jogador
         px, py, prot = self.player.x, self.player.y, self.player.rot
         
-        # OTIMIZAÇÃO: Processar raios em lotes quando possível
         for i in range(config.NUM_RAYS):
-            # Ângulo do raio atual
             ray_angle = prot + self.ray_angles[i]
             
-            # Direção do raio
             dx = math.cos(ray_angle)
             dy = math.sin(ray_angle)
             
-            # DDA melhorado com informações de textura
             distance, wall_type, hit_side, wall_x = self.improved_dda_with_texture(px, py, dx, dy)
             
             if distance > 0 and distance < config.MAX_DEPTH:
-                # Correção fisheye
                 corrected_distance = distance * self.distance_correction[i]
                 
-                # Altura da parede
                 wall_height = min(config.WALL_HEIGHT / max(corrected_distance, 0.1), 
                                 config.WIN_HEIGHT * 2)
                 
-                # Posições na tela
                 wall_top = max(0, int((config.WIN_HEIGHT - wall_height) // 2))
                 wall_bottom = min(config.WIN_HEIGHT, int(wall_top + wall_height))
                 
-                # Shading baseado na distância e lado da parede
                 base_shade = max(config.MIN_SHADE, 1.0 - (distance / config.FOG_DISTANCE))
-                if hit_side == 1:  # Lado Y da parede (mais escuro)
+                if hit_side == 1:
                     base_shade *= config.SIDE_SHADE_FACTOR
                 
-                # OTIMIZAÇÃO: Usar método otimizado para desenhar coluna
                 self.draw_optimized_textured_column(i * config.COLUMN_WIDTH, wall_top, wall_bottom, 
                                                   wall_type, base_shade, wall_x, hit_side)
                 
@@ -141,10 +113,8 @@ class Game:
 
     def improved_dda_with_texture(self, px, py, dx, dy):
         """DDA algorithm melhorado com informações de textura"""
-        # Posição atual no mapa
         map_x, map_y = int(px), int(py)
         
-        # Calcular delta distances
         if abs(dx) < 1e-10:
             delta_dist_x = 1e30
         else:
@@ -155,7 +125,6 @@ class Game:
         else:
             delta_dist_y = abs(1.0 / dy)
         
-        # Calcular step e distância inicial
         if dx < 0:
             step_x = -1
             side_dist_x = (px - map_x) * delta_dist_x
@@ -170,12 +139,11 @@ class Game:
             step_y = 1
             side_dist_y = (map_y + 1.0 - py) * delta_dist_y
         
-        # DDA loop
         hit = False
         side = 0
         wall_type = 1
         
-        for _ in range(int(config.MAX_DEPTH * 2)):  # Limite para evitar loop infinito
+        for _ in range(int(config.MAX_DEPTH * 2)):
             if side_dist_x < side_dist_y:
                 side_dist_x += delta_dist_x
                 map_x += step_x
@@ -185,11 +153,10 @@ class Game:
                 map_y += step_y
                 side = 1
             
-            # Verificar se atingiu uma parede
             if (map_y < 0 or map_y >= len(self.map) or 
                 map_x < 0 or map_x >= len(self.map[0])):
                 hit = True
-                wall_type = 1  # Parede de borda
+                wall_type = 1
                 break
             elif self.map[map_y][map_x] != 0:
                 hit = True
@@ -199,7 +166,6 @@ class Game:
         if not hit:
             return config.MAX_DEPTH, 1, 0, 0.0
         
-        # Calcular distância perpendicular e coordenada de textura
         if side == 0:
             perp_wall_dist = (map_x - px + (1 - step_x) / 2) / dx
             wall_x = py + perp_wall_dist * dy
@@ -207,7 +173,6 @@ class Game:
             perp_wall_dist = (map_y - py + (1 - step_y) / 2) / dy
             wall_x = px + perp_wall_dist * dx
         
-        # Normalizar coordenada de textura (0.0 a 1.0)
         wall_x = wall_x - math.floor(wall_x)
         
         return abs(perp_wall_dist), wall_type, side, wall_x
@@ -219,13 +184,11 @@ class Game:
         if wall_height <= 0 or screen_x < 0 or screen_x >= config.WIN_WIDTH:
             return
         
-        # Obter textura
         texture = self.texture_manager.get_wall_texture(wall_type)
         
         if config.ENABLE_TEXTURES and texture:
             self.draw_fast_textured_column(screen_x, wall_top, wall_bottom, texture, wall_x, shade)
         else:
-            # Fallback para cor sólida se texturas estiverem desabilitadas
             self.draw_solid_color_column(screen_x, wall_top, wall_bottom, wall_type, shade)
 
     def draw_fast_textured_column(self, screen_x, wall_top, wall_bottom, texture, wall_x, shade):
@@ -236,50 +199,38 @@ class Game:
         if wall_height <= 0:
             return
         
-        # OTIMIZAÇÃO 1: Cache de colunas de textura
         cache_key = (id(texture), int(wall_x * tex_width), wall_height, int(shade * 100))
         
         if cache_key in self.texture_column_cache:
-            # Usar coluna do cache
             cached_column = self.texture_column_cache[cache_key]
             self.blit_column_fast(screen_x, wall_top, cached_column)
             return
         
-        # OTIMIZAÇÃO 2: Calcular coordenada X da textura uma vez
         tex_x = int(wall_x * tex_width) % tex_width
         
-        # OTIMIZAÇÃO 3: Usar pygame.transform.scale para escalar a fatia da textura
-        # Extrair uma fatia vertical da textura
         tex_column_rect = pygame.Rect(tex_x, 0, 1, tex_height)
         try:
             tex_column = texture.subsurface(tex_column_rect)
             
-            # OTIMIZAÇÃO 4: Escalar a fatia para a altura desejada de uma vez
             scaled_column = pygame.transform.scale(tex_column, (config.COLUMN_WIDTH, wall_height))
             
-            # OTIMIZAÇÃO 5: Aplicar shading usando surfarray (mais rápido)
             if shade < 1.0:
                 scaled_column = self.apply_shade_fast(scaled_column, shade)
             
-            # OTIMIZAÇÃO 6: Adicionar ao cache se não estiver cheio
             if len(self.texture_column_cache) < self.max_column_cache:
                 self.texture_column_cache[cache_key] = scaled_column.copy()
             
-            # Desenhar na tela
             self.blit_column_fast(screen_x, wall_top, scaled_column)
             
         except (ValueError, pygame.error):
-            # Fallback para método antigo em caso de erro
             self.draw_solid_color_column(screen_x, wall_top, wall_bottom, 1, shade)
 
     def apply_shade_fast(self, surface, shade):
         """OTIMIZAÇÃO: Aplicar shading rapidamente usando operações de surface"""
-        # Criar uma surface com a cor do shade
         shade_surface = pygame.Surface(surface.get_size())
         shade_value = int(255 * shade)
         shade_surface.fill((shade_value, shade_value, shade_value))
         
-        # Aplicar o shade usando blend multiply
         shaded_surface = surface.copy()
         shaded_surface.blit(shade_surface, (0, 0), special_flags=pygame.BLEND_MULT)
         
@@ -288,10 +239,8 @@ class Game:
     def blit_column_fast(self, screen_x, wall_top, column_surface):
         """OTIMIZAÇÃO: Blit rápido de coluna na tela"""
         if screen_x >= 0 and screen_x + config.COLUMN_WIDTH <= config.WIN_WIDTH:
-            # Blit direto se não há clipping necessário
             self.screen_buffer.blit(column_surface, (screen_x, wall_top))
         else:
-            # Blit com clipping se necessário
             dest_rect = pygame.Rect(screen_x, wall_top, config.COLUMN_WIDTH, column_surface.get_height())
             screen_rect = pygame.Rect(0, 0, config.WIN_WIDTH, config.WIN_HEIGHT)
             
@@ -307,7 +256,6 @@ class Game:
 
     def draw_solid_color_column(self, screen_x, wall_top, wall_bottom, wall_type, shade):
         """Desenhar coluna com cor sólida (fallback otimizado)"""
-        # Cores base por tipo de parede
         base_colors = {
             1: config.BRICK_COLOR,
             2: config.STONE_COLOR,
@@ -316,17 +264,14 @@ class Game:
         
         base_color = base_colors.get(wall_type, config.DEFAULT_WALL_COLOR)
         
-        # Aplicar shading
         color = (
             max(0, min(255, int(base_color[0] * shade))),
             max(0, min(255, int(base_color[1] * shade))),
             max(0, min(255, int(base_color[2] * shade)))
         )
         
-        # Desenhar retângulo
         height = max(1, wall_bottom - wall_top)
         if height > 0 and screen_x >= 0 and screen_x < config.WIN_WIDTH:
-            # OTIMIZAÇÃO: Usar fill_rect que é mais rápido
             rect = pygame.Rect(screen_x, wall_top, config.COLUMN_WIDTH, height)
             self.screen_buffer.fill(color, rect)
 
@@ -351,12 +296,11 @@ class Game:
         map_x, map_y = int(x), int(y)
         if (0 <= map_y < len(self.map) and 0 <= map_x < len(self.map[0])):
             return self.map[map_y][map_x]
-        return "OOB"  # Out of bounds
-
+        return "OOB"
+        
     def clear_texture_cache(self):
         """Limpar cache de texturas quando necessário"""
         if len(self.texture_column_cache) > self.max_column_cache * 0.9:
-            # Limpar metade do cache
             cache_items = list(self.texture_column_cache.items())
             for i in range(len(cache_items) // 2):
                 del self.texture_column_cache[cache_items[i][0]]
