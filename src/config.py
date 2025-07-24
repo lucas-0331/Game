@@ -10,8 +10,8 @@ ROTATION_R = 0.0
 
 # Configurações de movimento
 PRECISION = 0.1
-MOVE_SPEED = 0.08
-SENSITIVITY = 0.04
+MOVE_SPEED = 0.09
+SENSITIVITY = 0.05
 
 # Configurações de raycasting
 FOV = 80
@@ -22,7 +22,7 @@ WALL_HEIGHT = 800
 MAX_WALL_HEIGHT = WIN_HEIGHT * 1.5
 
 # Configurações de renderização e textura
-TEXTURE_SIZE = 64
+TEXTURE_SIZE = 128
 TEXTURE_SCALE_FACTOR = 1.0
 
 # Configurações de shading
@@ -37,8 +37,8 @@ WOOD_COLOR = (160, 100, 60)    # Madeira
 DEFAULT_WALL_COLOR = (100, 100, 100)  # Cor padrão
 
 # Cores do ambiente
-FLOOR_COLOR = (50, 50, 50)
-CEILING_COLOR = (15, 15, 30)
+FLOOR_COLOR = (19, 9, 9)
+CEILING_COLOR = (7, 32, 59)
 
 # Controles
 W_KEY = S_KEY = A_KEY = D_KEY = False
