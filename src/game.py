@@ -232,7 +232,6 @@ class Game:
     def run(self):
         while config.RUNNING:
             config.CLOCK.tick(config.FPS)
-
             events = pygame.event.get()
 
             if self.game_state == 'main_menu':
@@ -417,7 +416,6 @@ class Game:
         # Céu
         pygame.draw.rect(self.screen_buffer, config.CEILING_COLOR, 
                         (0, 0, config.WIN_WIDTH, config.WIN_HEIGHT // 2))
-        # Chão
         pygame.draw.rect(self.screen_buffer, config.FLOOR_COLOR,
                         (0, config.WIN_HEIGHT // 2, config.WIN_WIDTH, config.WIN_HEIGHT // 2))
 
@@ -552,7 +550,7 @@ class Game:
             return
         
         tex_x = int(wall_x * tex_width) % tex_width
-
+        
         tex_column_rect = pygame.Rect(tex_x, 0, 1, tex_height)
 
         try:
