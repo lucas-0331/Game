@@ -40,7 +40,8 @@ class Game:
             
             self.ui_manager.draw(config.DISPLAY, current_state)
 
-            pygame.display.set_caption(f"FPS: {int(config.CLOCK.get_fps())}")
+            # pygame.display.set_caption(f"FPS: {int(config.CLOCK.get_fps())}")
+            pygame.display.set_caption('Labirintity')
             pygame.display.flip()
         pygame.quit()
 
@@ -112,7 +113,7 @@ class Game:
         config.GRAPHICS_QUALITY = quality
         if quality == 'low': config.COLUMN_WIDTH = 8; config.FOG_DISTANCE = 8
         elif quality == 'medium': config.COLUMN_WIDTH = 4; config.FOG_DISTANCE = 12
-        elif quality == 'high': config.COLUMN_WIDTH = 1; config.FOG_DISTANCE = 30
+        elif quality == 'high': config.COLUMN_WIDTH = 1; config.FOG_DISTANCE = 24
         self.renderer.setup_optimizations()
         self.ui_manager.create_all_menus()
 
