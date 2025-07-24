@@ -1,6 +1,5 @@
 import pygame
 import os
-import math
 from src import config
 
 class TextureManager:
@@ -11,7 +10,6 @@ class TextureManager:
         self.cache_access_count = 0
         self.load_textures()
     
-
     def load_textures(self):
         assets_path = "assets/textures/"
         try:
@@ -28,14 +26,12 @@ class TextureManager:
                             continue
         except OSError:
             pass
-        
     
     def get_wall_texture(self, wall_type):
         if not config.ENABLE_TEXTURES:
             return None
             
         return self.textures.get(wall_type, self.textures.get(1))
-    
 
     def get_scaled_texture(self, wall_type, size):
         if not config.ENABLE_TEXTURES:
@@ -67,7 +63,6 @@ class TextureManager:
         
         return base_texture
     
-
     def cleanup_cache(self):
         if len(self.scaled_cache) > self.max_cache_size * 0.8:
             items_to_remove = len(self.scaled_cache) // 4
@@ -79,11 +74,9 @@ class TextureManager:
                     if key_to_remove in self.scaled_cache:
                         del self.scaled_cache[key_to_remove]
     
-
     def clear_cache(self):
         self.scaled_cache.clear()
         self.cache_access_count = 0
-    
 
     def get_texture_info(self):
         return {
@@ -93,3 +86,4 @@ class TextureManager:
             'texture_size': config.TEXTURE_SIZE,
             'textures_enabled': config.ENABLE_TEXTURES
         }
+
