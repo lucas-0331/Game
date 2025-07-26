@@ -46,10 +46,14 @@ class Game:
         pygame.quit()
 
     def update_states(self, events, state):
-        if state in ['main_menu', 'options_main', 'options_resolution', 'options_graphics', 'paused']:
+        if state in ['main_menu', 'options_main', 'options_resolution', 'options_graphics', 'paused', 'how_to_play']:
             self.ui_manager.handle_events(events, state)
         elif state == 'playing':
             self.handle_playing_events(events)
+            for event in events:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_f:
+                    self.player.handle_interaction_key()
+
             player_status = self.player.update()
             if player_status == 'goal_reached':
                 self.start_level_transition()
@@ -61,14 +65,17 @@ class Game:
             for event in events:
                 if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                     self.pop_state()
-    
+
     def handle_playing_events(self, events):
         for event in events:
             if event.type == pygame.QUIT:
                 self.quit_game()
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                self.ui_manager.pause_background = config.DISPLAY.copy()
-                self.push_state('paused')
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.ui_manager.pause_background = config.DISPLAY.copy()
+                    self.push_state('paused')
+                if event.key == pygame.K_f:
+                    self.player.handle_interaction_key()
     
     def start_level_transition(self):
         self.change_state('level_transition')
@@ -76,10 +83,15 @@ class Game:
         self.ui_manager.loading_frame_index = 0
         self.ui_manager.gif_animation_finished = False
 
-    def push_state(self, state): self.state_stack.append(state)
+    def push_state(self, state):
+        self.state_stack.append(state)
+
     def pop_state(self):
-        if len(self.state_stack) > 1: self.state_stack.pop()
-    def change_state(self, state): self.state_stack = [state]
+        if len(self.state_stack) > 1:
+            self.state_stack.pop()
+
+    def change_state(self, state):
+        self.state_stack = [state]
 
     def start_game(self):
         self.current_level = 1; self.reset_level(); self.change_state('playing')
@@ -117,7 +129,12 @@ class Game:
         self.renderer.setup_optimizations()
         self.ui_manager.create_all_menus()
 
-    def resume_game(self): self.pop_state()
-    def quit_game(self): self.running = False
-    def return_to_main_menu(self): self.change_state('main_menu')
+    def resume_game(self):
+        self.pop_state()
+
+    def quit_game(self):
+        self.running = False
+
+    def return_to_main_menu(self):
+        self.change_state('main_menu')
 
