@@ -34,7 +34,6 @@ class Renderer:
         self.setup_optimizations()
 
     def create_procedural_wood_texture(self, size=(256, 256)):
-        """Gera uma textura procedural de tábuas de madeira em alta resolução."""
         wood_color = (139, 90, 43); line_color = (87, 56, 26)
         plank_width = size[0] // 4 
         texture = pygame.Surface(size)
@@ -67,7 +66,7 @@ class Renderer:
         for i, angle in enumerate(self.ray_angles):
             ray_angle = prot + angle
             dx, dy = math.cos(ray_angle), math.sin(ray_angle)
-            distance, wall_type, hit_side, wall_x = self.improved_dda_with_texture(px, py, dx, dy, self.game.map)
+            distance, wall_type, hit_side, wall_x = self.improved_dda_with_texture(px, py, dx, dy, self.player.map)
             if 0 < distance < config.MAX_DEPTH:
                 corrected_distance = distance * self.distance_correction[i]
                 wall_height = config.WIN_HEIGHT / max(corrected_distance, 0.0001)
@@ -130,18 +129,25 @@ class Renderer:
         map_x, map_y = int(px), int(py)
         delta_dist_x = abs(1.0 / dx) if dx != 0 else 1e30
         delta_dist_y = abs(1.0 / dy) if dy != 0 else 1e30
-        if dx < 0: step_x, side_dist_x = -1, (px - map_x) * delta_dist_x
-        else: step_x, side_dist_x = 1, (map_x + 1.0 - px) * delta_dist_x
-        if dy < 0: step_y, side_dist_y = -1, (py - map_y) * delta_dist_y
-        else: step_y, side_dist_y = 1, (map_y + 1.0 - py) * delta_dist_y
+        if dx < 0:
+            step_x, side_dist_x = -1, (px - map_x) * delta_dist_x
+        else:
+            step_x, side_dist_x = 1, (map_x + 1.0 - px) * delta_dist_x
+        if dy < 0:
+            step_y, side_dist_y = -1, (py - map_y) * delta_dist_y
+        else:
+            step_y, side_dist_y = 1, (map_y + 1.0 - py) * delta_dist_y
         for _ in range(int(config.MAX_DEPTH * 2)):
             if side_dist_x < side_dist_y:
                 side_dist_x += delta_dist_x; map_x += step_x; side = 0
             else:
                 side_dist_y += delta_dist_y; map_y += step_y; side = 1
-            if not (0 <= map_y < len(current_map) and 0 <= map_x < len(current_map[0])) or current_map[map_y][map_x] != 0: break
-        if side == 0: perp_wall_dist = (map_x - px + (1 - step_x) / 2) / dx; wall_x = py + perp_wall_dist * dy
-        else: perp_wall_dist = (map_y - py + (1 - step_y) / 2) / dy; wall_x = px + perp_wall_dist * dx
+            if not (0 <= map_y < len(current_map) and 0 <= map_x < len(current_map[0])) or current_map[map_y][map_x] != 0:
+                break
+        if side == 0:
+            perp_wall_dist = (map_x - px + (1 - step_x) / 2) / dx; wall_x = py + perp_wall_dist * dy
+        else:
+            perp_wall_dist = (map_y - py + (1 - step_y) / 2) / dy; wall_x = px + perp_wall_dist * dx
         wall_x -= math.floor(wall_x)
         wall_type = current_map[map_y][map_x] if 0 <= map_y < len(current_map) and 0 <= map_x < len(current_map[0]) else 1
         return abs(perp_wall_dist), wall_type, side, wall_x
