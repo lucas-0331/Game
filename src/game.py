@@ -12,7 +12,7 @@ class Game:
         self.texture_manager = TextureManager()
         self.running = True
 
-        self.current_level = 1
+        self.current_level = 0
         self.map = self.maps.get_map(self.current_level)
         if self.map is None: raise ValueError(f"Mapa para o nível {self.current_level} não encontrado!")
         self.player = Player(self.current_level)
@@ -94,7 +94,9 @@ class Game:
         self.state_stack = [state]
 
     def start_game(self):
-        self.current_level = 1; self.reset_level(); self.change_state('playing')
+        self.current_level = 0;
+        self.reset_level();
+        self.change_state('playing')
 
     def start_next_level(self):
         self.current_level += 1
