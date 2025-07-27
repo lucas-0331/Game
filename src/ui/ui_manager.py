@@ -62,6 +62,7 @@ class UIManager:
             "",
             "Agradecimentos Especiais:",
             "Professor Ricardo Martins",
+            "Erik Abdala",
             "id Software",
             "John Romero",
             "Pixel Art Village",
