@@ -23,7 +23,7 @@ class Player:
             target_pos = self.interaction_target['pos']
             target_type = self.interaction_target['type']
             
-            if 0 < target_type < 10:
+            if 0 < target_type < 9:
                 if self.marks_left > 0:
                     self.map[target_pos[1]][target_pos[0]] = target_type * 11
                     self.marks_left -= 1
@@ -35,7 +35,6 @@ class Player:
                 original_type = target_type // 11
                 self.map[target_pos[1]][target_pos[0]] = original_type
                 self.marks_left = min(self.marks_left + 1, 5)
-                print(f"Marcação removida! Marcações restantes: {self.marks_left}")
                 self.interaction_target = None
 
     def update(self):
